@@ -1,0 +1,59 @@
+<resources>
+    <string name="app_name">AutoAccept ADB</string>
+    <string name="accessibility_service_name">AutoAccept ADB 授權服務</string>
+    <string name="accessibility_service_description">此無障礙服務專門用於自動偵測並點擊「允許 USB / 無線 ADB 偵錯」彈出對話框，免除手動觸控螢幕操作，適合無螢幕設備、遠端設備或自動化測試使用。</string>
+    
+    <!-- Header & Intro -->
+    <string name="app_title">AutoAccept ADB</string>
+    <string name="app_subtitle">開機自動常駐 • 免觸控授權 ADB 偵錯</string>
+    <string name="app_intro_title">💡 關於本工具與運作原理</string>
+    <string name="app_intro_desc">當電腦透過 USB 或 Wi-Fi 連線至此裝置發起 ADB 偵錯時，系統會彈出「允許 USB 偵錯嗎？」授權視窗。\n\n本應用程式透過系統的「無障礙服務 (Accessibility Service)」全自動偵測該視窗，秒速勾選「一律允許」並點擊「允許/確定」，無需人工觸控螢幕。只要在此頁面完成初次授權，重新開機後系統亦會自動常駐執行！</string>
+
+    <!-- Status Cards -->
+    <string name="status_title">系統狀態</string>
+    <string name="status_service_running">🟢 無障礙服務：運行中 (監控中)</string>
+    <string name="status_service_stopped">🔴 無障礙服務：未啟用 (需開啟)</string>
+    <string name="status_battery_ignored">🟢 電池最佳化：已加入白名單</string>
+    <string name="status_battery_optimizing">🟡 電池最佳化：未放行 (可能被系統殺後台)</string>
+    <string name="status_notification_granted">🟢 通知權限：已授權</string>
+    <string name="status_notification_denied">🟡 通知權限：未授權</string>
+
+    <!-- Permission Steps -->
+    <string name="wizard_title">🚀 一鍵授權引導精靈</string>
+    <string name="wizard_desc">請依序完成以下授權，以確保開機自動啟動與後台不被中斷：</string>
+    
+    <string name="btn_grant_all">⚡ 開始設定所有必備權限</string>
+    <string name="step1_accessibility_title">1. 開啟「無障礙服務」(必要)</string>
+    <string name="step1_accessibility_desc">用於即時偵測 ADB 授權彈窗並自動點擊同意按鈕。</string>
+    <string name="step1_accessibility_btn">前往啟用無障礙服務</string>
+
+    <string name="step2_battery_title">2. 忽略電池最佳化 (重要)</string>
+    <string name="step2_battery_desc">防止 Android 系統在休眠或後台時暫停服務運作。</string>
+    <string name="step2_battery_btn">申請電池白名單</string>
+
+    <string name="step3_notification_title">3. 常駐前台通知權限</string>
+    <string name="step3_notification_desc">建立常駐通知以提升進程優先級，防止被系統殺死。</string>
+    <string name="step3_notification_btn">開啟前台常駐通知</string>
+
+    <string name="step4_oem_title">4. 品牌機型開機自啟與後台防殺 (可選)</string>
+    <string name="step4_oem_desc">小米/紅米(MIUI/HyperOS)、OPPO、vivo 等機型請開啟「自啟動」權限。</string>
+    <string name="step4_oem_btn">前往應用程式資訊 / 廠商設定</string>
+
+    <!-- Settings -->
+    <string name="settings_title">⚙️ 自動點擊設定</string>
+    <string name="setting_delay_title">⏱️ 偵測後延遲點擊時間</string>
+    <string name="setting_delay_desc">偵測到 ADB 視窗並讀取文字後，等待指定秒數再點擊同意（預設 2 秒）。</string>
+
+    <!-- Test & Logs -->
+    <string name="test_section_title">🧪 測試與即時日誌</string>
+    <string name="test_dialog_btn">彈出測試對話框 (檢驗自動點擊)</string>
+    <string name="test_dialog_title">允許 USB 偵錯？(模擬測試)</string>
+    <string name="test_dialog_message">這是一個模擬的 USB 偵錯授權視窗。\nRSA 金鑰指紋：\nAB:CD:EF:12:34:56:78:90</string>
+    <string name="test_dialog_checkbox">一律允許透過這部電腦進行偵錯</string>
+    <string name="test_dialog_allow">允許</string>
+    <string name="test_dialog_cancel">取消</string>
+
+    <string name="logs_title">📋 觸發記錄 (即時更新)</string>
+    <string name="btn_clear_logs">清除日誌</string>
+    <string name="log_empty">尚無授權觸發記錄。當連接電腦彈出 ADB 授權時會自動記錄在此。</string>
+</resources>
