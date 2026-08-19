@@ -173,12 +173,10 @@ class AdbAccessibilityService : AccessibilityService() {
 
                 isHandlingDialog = true
 
-                val prefs = getSharedPreferences("auto_accept_adb_prefs", Context.MODE_PRIVATE)
-                val delaySeconds = prefs.getInt("pref_click_delay_seconds", 2)
-                val delayMs = delaySeconds * 1000L
+                val delayMs = 2000L // 固定等待 2 秒
 
                 lastHandledTime = now + delayMs + debounceIntervalMs // 確保處理完畢後 5 秒內不重複觸發
-                Log.i(TAG, "🔍 偵測到 ADB 授權視窗！等待 ${delaySeconds} 秒後點擊放行...")
+                Log.i(TAG, "🔍 偵測到 ADB 授權視窗！等待 2 秒後點擊放行...")
 
                 handler.postDelayed({
                     try {

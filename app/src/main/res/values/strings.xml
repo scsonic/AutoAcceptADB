@@ -39,13 +39,8 @@
     <string name="step4_oem_desc">小米/紅米(MIUI/HyperOS)、OPPO、vivo 等機型請開啟「自啟動」權限。</string>
     <string name="step4_oem_btn">前往應用程式資訊 / 廠商設定</string>
 
-    <!-- Settings -->
-    <string name="settings_title">⚙️ 自動點擊設定</string>
-    <string name="setting_delay_title">⏱️ 偵測後延遲點擊時間</string>
-    <string name="setting_delay_desc">偵測到 ADB 視窗並讀取文字後，等待指定秒數再點擊同意（預設 2 秒）。</string>
-
-    <!-- Test & Logs -->
-    <string name="test_section_title">🧪 測試與即時日誌</string>
+    <!-- Test & Simulation -->
+    <string name="test_section_title">🧪 模擬測試</string>
     <string name="test_dialog_btn">彈出測試對話框 (檢驗自動點擊)</string>
     <string name="test_dialog_title">允許 USB 偵錯？(模擬測試)</string>
     <string name="test_dialog_message">這是一個模擬的 USB 偵錯授權視窗。\nRSA 金鑰指紋：\nAB:CD:EF:12:34:56:78:90</string>

@@ -39,43 +39,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupListeners()
-        setupDelaySettings()
         updateStatus()
 
         // Start KeepAlive service if notification permission is ready
         if (hasNotificationPermission()) {
             KeepAliveService.start(this)
-        }
-    }
-
-    private fun setupDelaySettings() {
-        val prefs = getSharedPreferences("auto_accept_adb_prefs", Context.MODE_PRIVATE)
-        val currentDelay = prefs.getInt("pref_click_delay_seconds", 2)
-
-        when (currentDelay) {
-            0 -> binding.toggleGroupDelay.check(R.id.btnDelay0)
-            1 -> binding.toggleGroupDelay.check(R.id.btnDelay1)
-            2 -> binding.toggleGroupDelay.check(R.id.btnDelay2)
-            3 -> binding.toggleGroupDelay.check(R.id.btnDelay3)
-            5 -> binding.toggleGroupDelay.check(R.id.btnDelay5)
-            else -> binding.toggleGroupDelay.check(R.id.btnDelay2)
-        }
-
-        binding.tvCurrentDelay.text = "⏱️ 目前設定：偵測後等待 $currentDelay 秒再執行點擊"
-
-        binding.toggleGroupDelay.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                val delaySec = when (checkedId) {
-                    R.id.btnDelay0 -> 0
-                    R.id.btnDelay1 -> 1
-                    R.id.btnDelay2 -> 2
-                    R.id.btnDelay3 -> 3
-                    R.id.btnDelay5 -> 5
-                    else -> 2
-                }
-                prefs.edit().putInt("pref_click_delay_seconds", delaySec).apply()
-                binding.tvCurrentDelay.text = "⏱️ 目前設定：偵測後等待 $delaySec 秒再執行點擊"
-            }
         }
     }
 

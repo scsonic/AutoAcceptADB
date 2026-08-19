@@ -17,7 +17,7 @@ An intelligent, lightweight Android application designed for headless devices, r
   - Targets only genuine ADB authorization prompts across English, Traditional Chinese, and Simplified Chinese.
   - Matches keywords such as `USB debugging`, `Wireless debugging`, `RSA key fingerprint`, `Allow USB debugging`, `允許 USB 偵錯`, `允许 USB 调试`, `RSA 金鑰`, etc.
   - **Safety Blacklist**: Never interacts with destructive or unrelated prompts (e.g., app uninstallation, factory reset, data clearing, device formatting).
-- **Configurable Click Delay**: Customize how long to wait before clicking allow (`0s`, `1s`, `2s` [default], `3s`, `5s`) directly from the clean dashboard.
+- **Fixed 2-Second Delay**: Automatically waits 2 seconds after detecting an ADB prompt before checking *"Always allow"* and clicking *"Allow"*, ensuring clean visual confirmation without cluttering the UI with unnecessary settings.
 - **Visual Feedback & 5s Cooldown**:
   - Displays a global Toast notification on successful authorization: `🎉 AutoAccept ADB: Debugging Authorized!`.
   - Implements a 5-second debounce cooldown after each acceptance to prevent duplicate triggers or event spamming.
