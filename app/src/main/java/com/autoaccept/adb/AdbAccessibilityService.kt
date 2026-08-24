@@ -27,17 +27,24 @@ class AdbAccessibilityService : AccessibilityService() {
             // English
             "usb debugging",
             "allow usb debugging",
+            "allow usb debugging?",
             "wireless debugging",
             "allow wireless debugging",
+            "allow wireless debugging?",
             "rsa key fingerprint",
             "rsa key",
+            "the computer's rsa key fingerprint is",
             "always allow from this computer",
             "adb debugging",
+            "allow debugging",
+            "an authorized computer is connecting",
             // Traditional Chinese (繁體中文)
             "usb 偵錯",
             "usb偵錯",
             "允許 usb 偵錯",
             "允許usb偵錯",
+            "允許 usb 偵錯？",
+            "允許usb偵錯？",
             "無線偵錯",
             "允許無線偵錯",
             "rsa 金鑰",
@@ -55,6 +62,8 @@ class AdbAccessibilityService : AccessibilityService() {
             "usb调试",
             "允许 usb 调试",
             "允许usb调试",
+            "允许 usb 调试？",
+            "允许usb调试？",
             "无线调试",
             "允许无线调试",
             "rsa 密钥",
@@ -76,7 +85,7 @@ class AdbAccessibilityService : AccessibilityService() {
 
         // 4. Keyword Group 3: RSA & Security Keys
         private val SECURITY_KEY_KEYWORDS = listOf(
-            "rsa", "fingerprint", "金鑰", "金錀", "密钥", "金匙", "指紋", "指纹"
+            "rsa", "fingerprint", "key", "金鑰", "金錀", "密钥", "金匙", "指紋", "指纹"
         )
 
         // 5. Safety Blacklist (Never touch dangerous system dialogs)
@@ -95,6 +104,12 @@ class AdbAccessibilityService : AccessibilityService() {
             "Ok",
             "Allow",
             "ALLOW",
+            "Accept",
+            "ACCEPT",
+            "Grant",
+            "GRANT",
+            "Authorize",
+            "AUTHORIZE",
             "同意",
             "開啟",
             "开启",
@@ -112,6 +127,9 @@ class AdbAccessibilityService : AccessibilityService() {
             "Deny",
             "DENY",
             "Dismiss",
+            "DISMISS",
+            "Reject",
+            "REJECT",
             "否",
             "拒绝"
         )
@@ -119,13 +137,18 @@ class AdbAccessibilityService : AccessibilityService() {
         // "Always allow" checkbox text patterns
         private val ALWAYS_ALLOW_PATTERNS = listOf(
             "Always allow",
+            "always allow",
+            "Always allow from this computer",
+            "Remember this computer",
+            "Always permit",
+            "Don't ask again",
+            "Do not ask again",
             "一律允許",
             "始終允許",
             "始终允许",
             "不再提示",
             "記住",
-            "记住",
-            "always allow"
+            "记住"
         )
     }
 
@@ -187,8 +210,8 @@ class AdbAccessibilityService : AccessibilityService() {
                         // 2. Click "Allow" / "OK" button
                         val clicked = clickAllowButton(currentRoot)
                         if (clicked) {
-                            Log.i(TAG, "🚀 已自動按下「允許/確定」按鈕，ADB 授權完成！")
-                            showToast("🎉 AutoAccept ADB: 已成功自動授權 ADB 偵錯！")
+                            Log.i(TAG, "🚀 Successfully clicked Allow/OK, ADB authorized!")
+                            showToast(getString(R.string.toast_adb_authorized))
                             isHandlingDialog = false
                         } else {
                             // Retry after 400ms if button is still loading or countdown (e.g., MIUI countdown)
@@ -197,8 +220,8 @@ class AdbAccessibilityService : AccessibilityService() {
                                     rootInActiveWindow?.let { newRoot ->
                                         if (isAdbDialog(newRoot)) {
                                             if (clickAllowButton(newRoot)) {
-                                                Log.i(TAG, "🚀 (重試) 已自動按下「允許/確定」按鈕！")
-                                                showToast("🎉 AutoAccept ADB: 已成功自動授權 ADB 偵錯！")
+                                                Log.i(TAG, "🚀 (Retry) Successfully clicked Allow/OK!")
+                                                showToast(getString(R.string.toast_adb_authorized))
                                             }
                                         }
                                     }

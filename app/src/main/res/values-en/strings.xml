@@ -1,0 +1,75 @@
+<resources>
+    <string name="app_name">AutoAccept ADB</string>
+    <string name="accessibility_service_name">AutoAccept ADB Authorization Service</string>
+    <string name="accessibility_service_description">This accessibility service automatically detects and clicks the \"Allow USB / Wireless ADB debugging\" authorization dialog without manual touchscreen interaction. Ideal for headless devices, remote racks, and automated testing.</string>
+    
+    <!-- Header & Intro -->
+    <string name="app_title">AutoAccept ADB</string>
+    <string name="app_subtitle">Auto-start on boot • Hands-free ADB authorization</string>
+    <string name="app_intro_title">💡 About &amp; How It Works</string>
+    <string name="app_intro_desc">When a computer connects via USB or Wi-Fi to start ADB debugging, the system displays an \"Allow USB debugging?\" dialog.\n\nThis app uses Android\'s native Accessibility Service to automatically detect the prompt, check \"Always allow\", and click \"Allow / OK\" with zero manual interaction. Once permissions are set up here, the service persists and auto-starts on device reboot!</string>
+
+    <!-- Status Cards -->
+    <string name="status_title">System Status</string>
+    <string name="status_service_running">🟢 Accessibility Service: Running (Active)</string>
+    <string name="status_service_stopped">🔴 Accessibility Service: Disabled (Action Required)</string>
+    <string name="status_battery_ignored">🟢 Battery Optimization: Whitelisted</string>
+    <string name="status_battery_optimizing">🟡 Battery Optimization: Optimizing (May be killed)</string>
+    <string name="status_notification_granted">🟢 Notification: Granted</string>
+    <string name="status_notification_denied">🟡 Notification: Not Granted</string>
+    <string name="btn_refresh_status">Refresh</string>
+
+    <!-- Permission Steps -->
+    <string name="wizard_title">🚀 Permission Setup Wizard</string>
+    <string name="wizard_desc">Complete the following permissions to ensure boot auto-start and background persistence:</string>
+    
+    <string name="btn_grant_all">⚡ Start Permission Setup Wizard</string>
+    <string name="btn_grant_all_completed">🎉 All Essential Permissions Ready!</string>
+    
+    <string name="step1_accessibility_title">1. Enable Accessibility Service (Required)</string>
+    <string name="step1_accessibility_desc">Used to detect ADB authorization dialogs and automatically click Allow.</string>
+    <string name="step1_accessibility_btn">Open Accessibility Settings</string>
+    <string name="step1_accessibility_btn_enabled">Accessibility Service: Enabled ✔</string>
+
+    <string name="step2_battery_title">2. Ignore Battery Optimization (Important)</string>
+    <string name="step2_battery_desc">Prevents Android Doze mode and OS task killers from suspending the service.</string>
+    <string name="step2_battery_btn">Request Battery Whitelist</string>
+    <string name="step2_battery_btn_enabled">Battery Whitelist: Whitelisted ✔</string>
+
+    <string name="step3_notification_title">3. Foreground Service Notification</string>
+    <string name="step3_notification_desc">Maintains high process priority to prevent being killed by low-memory killers.</string>
+    <string name="step3_notification_btn">Enable Foreground Notification</string>
+    <string name="step3_notification_btn_enabled">Foreground Notification: Granted ✔</string>
+
+    <string name="step4_oem_title">4. OEM Auto-Start &amp; Background Settings (Optional)</string>
+    <string name="step4_oem_desc">For Xiaomi (MIUI/HyperOS), OPPO, vivo, enable Auto-Start and No Battery Restrictions.</string>
+    <string name="step4_oem_btn">Open App Details / OEM Settings</string>
+
+    <!-- Test & Simulation -->
+    <string name="test_section_title">🧪 Simulation Test</string>
+    <string name="test_section_desc">Click the button below to display a simulated ADB authorization prompt to verify that the Accessibility Service automatically checks \"Always allow\" and clicks \"Allow\".</string>
+    <string name="test_dialog_btn">Show Simulation Dialog (Test Auto-Click)</string>
+    <string name="test_dialog_title">Allow USB debugging? (Simulation Test)</string>
+    <string name="test_dialog_message">This is a simulated USB debugging authorization prompt.\nRSA key fingerprint:\nAB:CD:EF:12:34:56:78:90</string>
+    <string name="test_dialog_checkbox">Always allow from this computer</string>
+    <string name="test_dialog_allow">Allow</string>
+    <string name="test_dialog_cancel">Cancel</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_status_refreshed">Status refreshed</string>
+    <string name="toast_wizard_accessibility">Please locate \"AutoAccept ADB\" in Accessibility Settings and toggle it ON!</string>
+    <string name="toast_wizard_all_done">All essential permissions granted! Service is monitoring ADB prompts in background.</string>
+    <string name="toast_open_accessibility_error">Unable to open Accessibility Settings directly. Please open it in System Settings.</string>
+    <string name="toast_open_battery_error">Unable to open Battery Settings.</string>
+    <string name="toast_battery_not_needed">Battery optimization is not required on this Android version.</string>
+    <string name="toast_notification_started">Foreground persistence notification started.</string>
+    <string name="toast_open_app_details_error">Unable to open App Details settings.</string>
+    <string name="toast_sim_dialog_success">🎉 Test Succeeded! Simulated ADB prompt was automatically accepted!</string>
+    <string name="toast_adb_authorized">🎉 AutoAccept ADB: Debugging Authorized!</string>
+
+    <!-- Foreground Notification -->
+    <string name="notification_channel_name">AutoAccept ADB Service Channel</string>
+    <string name="notification_channel_desc">Keeps AutoAccept ADB active to monitor ADB authorization dialogs</string>
+    <string name="notification_title">AutoAccept ADB is Active</string>
+    <string name="notification_text">Hands-free ADB authorization monitoring is active (Boot persistent)</string>
+</resources>

@@ -17,23 +17,29 @@
     <string name="status_battery_optimizing">🟡 電池最佳化：未放行 (可能被系統殺後台)</string>
     <string name="status_notification_granted">🟢 通知權限：已授權</string>
     <string name="status_notification_denied">🟡 通知權限：未授權</string>
+    <string name="btn_refresh_status">重新檢查</string>
 
     <!-- Permission Steps -->
     <string name="wizard_title">🚀 一鍵授權引導精靈</string>
     <string name="wizard_desc">請依序完成以下授權，以確保開機自動啟動與後台不被中斷：</string>
     
     <string name="btn_grant_all">⚡ 開始設定所有必備權限</string>
+    <string name="btn_grant_all_completed">🎉 所有必備權限已全部就緒！</string>
+    
     <string name="step1_accessibility_title">1. 開啟「無障礙服務」(必要)</string>
     <string name="step1_accessibility_desc">用於即時偵測 ADB 授權彈窗並自動點擊同意按鈕。</string>
     <string name="step1_accessibility_btn">前往啟用無障礙服務</string>
+    <string name="step1_accessibility_btn_enabled">無障礙服務：已啟用 ✔</string>
 
     <string name="step2_battery_title">2. 忽略電池最佳化 (重要)</string>
     <string name="step2_battery_desc">防止 Android 系統在休眠或後台時暫停服務運作。</string>
     <string name="step2_battery_btn">申請電池白名單</string>
+    <string name="step2_battery_btn_enabled">電池白名單：已加入 ✔</string>
 
     <string name="step3_notification_title">3. 常駐前台通知權限</string>
     <string name="step3_notification_desc">建立常駐通知以提升進程優先級，防止被系統殺死。</string>
     <string name="step3_notification_btn">開啟前台常駐通知</string>
+    <string name="step3_notification_btn_enabled">前台通知：已授權 ✔</string>
 
     <string name="step4_oem_title">4. 品牌機型開機自啟與後台防殺 (可選)</string>
     <string name="step4_oem_desc">小米/紅米(MIUI/HyperOS)、OPPO、vivo 等機型請開啟「自啟動」權限。</string>
@@ -41,6 +47,7 @@
 
     <!-- Test & Simulation -->
     <string name="test_section_title">🧪 模擬測試</string>
+    <string name="test_section_desc">點擊下方按鈕可彈出一個與系統 ADB 授權視窗相同結構的對話框，用以立即驗證無障礙服務是否能自動勾選並自動點擊同意。</string>
     <string name="test_dialog_btn">彈出測試對話框 (檢驗自動點擊)</string>
     <string name="test_dialog_title">允許 USB 偵錯？(模擬測試)</string>
     <string name="test_dialog_message">這是一個模擬的 USB 偵錯授權視窗。\nRSA 金鑰指紋：\nAB:CD:EF:12:34:56:78:90</string>
@@ -48,7 +55,21 @@
     <string name="test_dialog_allow">允許</string>
     <string name="test_dialog_cancel">取消</string>
 
-    <string name="logs_title">📋 觸發記錄 (即時更新)</string>
-    <string name="btn_clear_logs">清除日誌</string>
-    <string name="log_empty">尚無授權觸發記錄。當連接電腦彈出 ADB 授權時會自動記錄在此。</string>
+    <!-- Toast Messages -->
+    <string name="toast_status_refreshed">狀態已更新</string>
+    <string name="toast_wizard_accessibility">請在接下來的設定頁中找到「AutoAccept ADB」並開啟！</string>
+    <string name="toast_wizard_all_done">所有核心授權皆已完成！服務正在背景常駐監控 ADB 視窗。</string>
+    <string name="toast_open_accessibility_error">無法直接開啟無障礙設定，請手動前往系統設定開啟</string>
+    <string name="toast_open_battery_error">無法開啟電池設定頁面</string>
+    <string name="toast_battery_not_needed">此 Android 版本無需設定電池最佳化</string>
+    <string name="toast_notification_started">已啟動常駐前台通知</string>
+    <string name="toast_open_app_details_error">無法開啟應用程式詳細頁</string>
+    <string name="toast_sim_dialog_success">🎉 測試成功！模擬 ADB 視窗已自動放行！</string>
+    <string name="toast_adb_authorized">🎉 AutoAccept ADB: 已成功自動授權 ADB 偵錯！</string>
+
+    <!-- Foreground Notification -->
+    <string name="notification_channel_name">AutoAccept ADB 服務通知</string>
+    <string name="notification_channel_desc">保持 AutoAccept ADB 在後台持續監控 ADB 授權視窗</string>
+    <string name="notification_title">AutoAccept ADB 運作中</string>
+    <string name="notification_text">已開啟全自動 ADB 授權監控 (開機自啟常駐)</string>
 </resources>

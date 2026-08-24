@@ -108,7 +108,7 @@
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="重新檢查"
+                    android:text="@string/btn_refresh_status"
                     android:textColor="@color/primary_light"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -327,7 +327,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="點擊下方按鈕可彈出一個與系統 ADB 授權視窗相同結構的對話框，用以立即驗證無障礙服務是否能自動勾選並自動點擊同意。"
+                android:text="@string/test_section_desc"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:layout_marginBottom="12dp" />

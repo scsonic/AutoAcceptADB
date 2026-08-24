@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnRefreshStatus.setOnClickListener {
             updateStatus()
-            Toast.makeText(this, "狀態已更新", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_status_refreshed), Toast.LENGTH_SHORT).show()
         }
 
         // Wizard button: Guide through missing permissions
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         if (isAccessibilityOk) {
             binding.tvStatusAccessibility.text = getString(R.string.status_service_running)
             binding.tvStatusAccessibility.setTextColor(ContextCompat.getColor(this, R.color.success))
-            binding.btnStepAccessibility.text = "無障礙服務：已啟用 ✔"
+            binding.btnStepAccessibility.text = getString(R.string.step1_accessibility_btn_enabled)
             binding.btnStepAccessibility.isEnabled = true
         } else {
             binding.tvStatusAccessibility.text = getString(R.string.status_service_stopped)
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
         if (isBatteryOk) {
             binding.tvStatusBattery.text = getString(R.string.status_battery_ignored)
             binding.tvStatusBattery.setTextColor(ContextCompat.getColor(this, R.color.success))
-            binding.btnStepBattery.text = "電池白名單：已加入 ✔"
+            binding.btnStepBattery.text = getString(R.string.step2_battery_btn_enabled)
         } else {
             binding.tvStatusBattery.text = getString(R.string.status_battery_optimizing)
             binding.tvStatusBattery.setTextColor(ContextCompat.getColor(this, R.color.warning))
@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         if (isNotificationOk) {
             binding.tvStatusNotification.text = getString(R.string.status_notification_granted)
             binding.tvStatusNotification.setTextColor(ContextCompat.getColor(this, R.color.success))
-            binding.btnStepNotification.text = "前台通知：已授權 ✔"
+            binding.btnStepNotification.text = getString(R.string.step3_notification_btn_enabled)
         } else {
             binding.tvStatusNotification.text = getString(R.string.status_notification_denied)
             binding.tvStatusNotification.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
 
         // Update Wizard Button text if all core permissions are ready
         if (isAccessibilityOk && isBatteryOk && isNotificationOk) {
-            binding.btnGrantWizard.text = "🎉 所有必備權限已全部就緒！"
+            binding.btnGrantWizard.text = getString(R.string.btn_grant_all_completed)
             binding.btnGrantWizard.setBackgroundColor(ContextCompat.getColor(this, R.color.success))
         } else {
             binding.btnGrantWizard.text = getString(R.string.btn_grant_all)
@@ -141,7 +141,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleWizardClick() {
         if (!isAccessibilityServiceEnabled()) {
-            Toast.makeText(this, "請在接下來的設定頁中找到「AutoAccept ADB」並開啟！", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_wizard_accessibility), Toast.LENGTH_LONG).show()
             openAccessibilitySettings()
             return
         }
@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        Toast.makeText(this, "所有核心授權皆已完成！服務正在背景常駐監控 ADB 視窗。", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_wizard_all_done), Toast.LENGTH_SHORT).show()
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
@@ -205,7 +205,7 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "無法直接開啟無障礙設定，請手動前往系統設定開啟", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_open_accessibility_error), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -221,11 +221,11 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                     startActivity(intent)
                 } catch (e2: Exception) {
-                    Toast.makeText(this, "無法開啟電池設定頁面", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.toast_open_battery_error), Toast.LENGTH_SHORT).show()
                 }
             }
         } else {
-            Toast.makeText(this, "此 Android 版本無需設定電池最佳化", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_battery_not_needed), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             KeepAliveService.start(this)
             updateStatus()
-            Toast.makeText(this, "已啟動常駐前台通知", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_notification_started), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -247,7 +247,7 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "無法開啟應用程式詳細頁", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_open_app_details_error), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -280,7 +280,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(getString(R.string.test_dialog_title))
             .setView(container)
             .setPositiveButton(getString(R.string.test_dialog_allow)) { _, _ ->
-                Toast.makeText(this, "🎉 測試成功！模擬 ADB 視窗已自動放行！", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.toast_sim_dialog_success), Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton(getString(R.string.test_dialog_cancel)) { d, _ ->
                 d.dismiss()

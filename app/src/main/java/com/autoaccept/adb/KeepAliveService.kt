@@ -44,10 +44,10 @@ class KeepAliveService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "AutoAccept ADB 服務通知",
+                getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "保持 AutoAccept ADB 在後台持續監控 ADB 授權視窗"
+                description = getString(R.string.notification_channel_desc)
                 setShowBadge(false)
             }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -67,8 +67,8 @@ class KeepAliveService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AutoAccept ADB 運作中")
-            .setContentText("已開啟全自動 ADB 授權監控 (開機自啟常駐)")
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(getString(R.string.notification_text))
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

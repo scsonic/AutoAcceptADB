@@ -88,10 +88,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ## 🤖 CI / CD Pipeline
 
 This repository includes a GitHub Actions workflow ([`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)) that:
-- Triggers on every `push` and `pull_request` to the main branch.
-- Sets up JDK 17, caches Gradle dependencies, and compiles the debug APK.
-- Uploads the generated `app-debug.apk` as a workflow artifact.
-- **Automatically prunes old workflow runs**, retaining only the **latest 3 builds** to save storage space and keep your actions clean.
+- **Auto-Version on Every Commit**: Automatically increments `versionCode` by 1 on every Git commit (`git rev-list --count HEAD`), generating dynamic version names like `1.0.<commit_count>`.
+- **Auto-Build Release & Debug APKs**: Compiles signed Release APK and Debug APK.
+- **Automated GitHub Releases**: Creates or updates GitHub Releases tagged with `v1.0.<commit_count>`, attaching signed APKs and SHA256 checksums.
+- **Workflow Run Pruning**: Automatically prunes old workflow runs, retaining only the **latest 3 builds** to save storage space and keep actions tidy.
 
 ---
 
