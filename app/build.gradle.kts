@@ -40,16 +40,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = project.rootProject.file("release.keystore")
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "androiddebugkey"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
-            } else {
-                // Fallback to debug signing key so release APK is always signed and installable
-                initWith(getByName("debug"))
-            }
+            storeFile = file("release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "autoacceptadb"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
         }
     }
 
