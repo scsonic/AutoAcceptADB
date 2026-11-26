@@ -12,6 +12,7 @@ import android.widget.Toast
 class AdbAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
+    private var recovery: AdbPromptRecovery? = null
     private var lastHandledTime = 0L          // ADB 授權視窗
     private var lastDataHandledTime = 0L      // USB 資料存取視窗 (獨立計時，避免擋到緊接著出現的 ADB 視窗)
     private var lastInspectionTime = 0L
@@ -230,11 +231,14 @@ class AdbAccessibilityService : AccessibilityService() {
         // which can happen while a dialog is already on screen. No new event will arrive for it,
         // so proactively inspect the current window after (re)connecting.
         handler.postDelayed({ inspectAndHandleAdbDialog() }, 500L)
+        recovery = AdbPromptRecovery(this).also { it.start() }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
+        recovery?.stop()
+        recovery = null
         isServiceRunning = false
         Log.i(TAG, "AdbAccessibilityService destroyed")
     }
@@ -271,12 +275,30 @@ class AdbAccessibilityService : AccessibilityService() {
         return null
     }
 
+    /**
+     * Find a window that contains an ADB / data-access dialog. Checks the active window first,
+     * then every other window (the dialog may not be the active one, e.g. behind the shade).
+     */
+    private fun findDialogRoot(): Pair<AccessibilityNodeInfo, DialogType>? {
+        rootInActiveWindow?.let { root -> detectDialog(root)?.let { return root to it } }
+        try {
+            for (w in windows) {
+                val root = w.root ?: continue
+                // our own non-active windows are never a system dialog
+                if (!w.isActive && root.packageName?.toString() == packageName) continue
+                detectDialog(root)?.let { return root to it }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scanning windows", e)
+        }
+        return null
+    }
+
     private fun inspectAndHandleAdbDialog() {
         if (isHandlingDialog) return
-        val rootNode = rootInActiveWindow ?: return
 
         try {
-            val type = detectDialog(rootNode) ?: return
+            val (rootNode, type) = findDialogRoot() ?: return
             val now = System.currentTimeMillis()
             val lastTime = if (type == DialogType.ADB) lastHandledTime else lastDataHandledTime
             if (now - lastTime < debounceIntervalMs) {
@@ -299,7 +321,7 @@ class AdbAccessibilityService : AccessibilityService() {
 
             handler.postDelayed({
                 try {
-                    val currentRoot = rootInActiveWindow ?: rootNode
+                    val currentRoot = findDialogRoot()?.takeIf { it.second == type }?.first ?: rootNode
                     // 1. Check "Always allow" checkbox (ADB dialog only)
                     if (type == DialogType.ADB) {
                         checkAlwaysAllowCheckbox(currentRoot)
@@ -315,8 +337,8 @@ class AdbAccessibilityService : AccessibilityService() {
                         // Retry after 400ms if button is still loading or countdown (e.g., MIUI countdown)
                         handler.postDelayed({
                             try {
-                                rootInActiveWindow?.let { newRoot ->
-                                    if (detectDialog(newRoot) == type) {
+                                findDialogRoot()?.let { (newRoot, newType) ->
+                                    if (newType == type) {
                                         if (clickAllowButton(newRoot)) {
                                             Log.i(TAG, "🚀 (Retry) Successfully clicked Allow/OK on $type dialog")
                                             showToast(getString(toastRes))
@@ -410,29 +432,38 @@ class AdbAccessibilityService : AccessibilityService() {
      * Find and check "Always allow from this computer" checkbox
      */
     private fun checkAlwaysAllowCheckbox(root: AccessibilityNodeInfo): Boolean {
-        val checkboxes = mutableListOf<AccessibilityNodeInfo>()
-        findNodesByCondition(root, checkboxes) { node ->
+        // Only real checkable widgets. A label row with the same text must NOT be clicked as well,
+        // otherwise the checkbox gets toggled twice (on, then off again).
+        val checkables = mutableListOf<AccessibilityNodeInfo>()
+        findNodesByCondition(root, checkables) { node ->
             val className = node.className?.toString() ?: ""
-            val text = node.text?.toString() ?: ""
-            val isCheckboxType = className.contains("CheckBox", ignoreCase = true) ||
-                    className.contains("CompoundButton", ignoreCase = true)
-            val hasPattern = ALWAYS_ALLOW_PATTERNS.any { text.contains(it, ignoreCase = true) }
-
-            isCheckboxType || hasPattern
+            node.isCheckable || className.contains("CheckBox", ignoreCase = true) ||
+                    className.contains("CompoundButton", ignoreCase = true) ||
+                    className.contains("Switch", ignoreCase = true)
         }
 
-        var checkedAny = false
-        for (cb in checkboxes) {
-            if (!cb.isChecked) {
-                // Click the checkbox itself or its clickable parent
-                if (performClick(cb)) {
-                    checkedAny = true
-                }
-            } else {
-                checkedAny = true
+        if (checkables.isNotEmpty()) {
+            var ok = false
+            for (cb in checkables) {
+                cb.refresh()
+                val before = cb.isChecked
+                if (!before) performClick(cb)
+                cb.refresh()
+                Log.i(TAG, "Always-allow checkbox ${cb.viewIdResourceName ?: cb.className}: $before -> ${cb.isChecked}")
+                ok = ok || cb.isChecked || !before
             }
+            return ok
         }
-        return checkedAny
+
+        // Fallback: no checkable node exposed; click the first "always allow" label once
+        val labels = mutableListOf<AccessibilityNodeInfo>()
+        findNodesByCondition(root, labels) { node ->
+            val text = node.text?.toString() ?: ""
+            ALWAYS_ALLOW_PATTERNS.any { text.contains(it, ignoreCase = true) }
+        }
+        val label = labels.firstOrNull() ?: return false
+        Log.i(TAG, "Always-allow: clicking label \"${label.text}\"")
+        return performClick(label)
     }
 
     /**
