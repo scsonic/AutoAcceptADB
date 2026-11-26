@@ -71,7 +71,13 @@ class AdbAccessibilityService : AccessibilityService() {
             "rsa密钥",
             "密钥指纹",
             "始终允许使用这台计算机进行调试",
-            "允许调试"
+            "允许调试",
+            // Korean
+            "usb 디버깅",
+            "usb 디버깅을 허용",
+            "무선 디버깅",
+            "rsa 키 지문",
+            "이 컴퓨터에서 항상 허용"
         )
 
         // 1b. USB data-access prompts (e.g. Samsung "Allow access to phone data?")
@@ -105,16 +111,28 @@ class AdbAccessibilityService : AccessibilityService() {
             "访问此手机上的数据",
             "访问手机上的数据",
             "访问此设备上的数据",
-            "访问设备上的数据"
+            "访问设备上的数据",
+            // Korean (e.g. Samsung "휴대전화 데이터에 접근 허용")
+            "데이터에 접근 허용",
+            "데이터에 대한 접근 허용",
+            "데이터에 액세스",
+            "데이터 액세스 허용",
+            "데이터에 접근합니다"
+        )
+
+        // System packages that only ever show the USB data-access (MTP) prompt
+        private val DATA_ACCESS_PACKAGES = listOf(
+            "com.samsung.android.mtp"
         )
 
         // Combined rule for data-access prompts: (access) AND (data) AND (usb / connected device / computer)
-        private val DATA_ACCESS_VERBS = listOf("access", "存取", "访问", "訪問")
-        private val DATA_WORDS = listOf("data", "資料", "数据", "數據")
+        private val DATA_ACCESS_VERBS = listOf("access", "存取", "访问", "訪問", "접근", "액세스")
+        private val DATA_WORDS = listOf("data", "資料", "数据", "數據", "데이터")
         private val DATA_CONTEXT_WORDS = listOf(
             "usb", "connected device", "computer",
             "連接的裝置", "已連接", "連線的裝置", "電腦",
-            "连接的设备", "已连接", "电脑", "计算机"
+            "连接的设备", "已连接", "电脑", "计算机",
+            "연결된 디바이스", "연결된 기기", "컴퓨터"
         )
 
         // 2. Keyword Group 1: Connection Medium
@@ -124,19 +142,20 @@ class AdbAccessibilityService : AccessibilityService() {
 
         // 3. Keyword Group 2: Debugging Actions
         private val DEBUG_KEYWORDS = listOf(
-            "debugging", "debug", "偵錯", "侦错", "调试", "調試"
+            "debugging", "debug", "偵錯", "侦错", "调试", "調試", "디버깅"
         )
 
         // 4. Keyword Group 3: RSA & Security Keys
         private val SECURITY_KEY_KEYWORDS = listOf(
-            "rsa", "fingerprint", "key", "金鑰", "金錀", "密钥", "金匙", "指紋", "指纹"
+            "rsa", "fingerprint", "key", "金鑰", "金錀", "密钥", "金匙", "指紋", "指纹", "키 지문", "지문"
         )
 
         // 5. Safety Blacklist (Never touch dangerous system dialogs)
         private val BLACKLIST_KEYWORDS = listOf(
             "uninstall", "卸載", "卸载", "解除安裝", "刪除", "删除", "delete",
             "factory reset", "恢復出廠", "恢复出厂", "重設為原廠設定", "format", "格式化",
-            "wipe data", "清除資料", "清除数据"
+            "wipe data", "清除資料", "清除数据",
+            "삭제", "초기화", "포맷"
         )
 
         // Positive button text patterns
@@ -159,7 +178,9 @@ class AdbAccessibilityService : AccessibilityService() {
             "开启",
             "繼續",
             "继续",
-            "下一步"
+            "下一步",
+            "허용",
+            "확인"
         )
 
         // Negative button text patterns to avoid clicking
@@ -175,7 +196,10 @@ class AdbAccessibilityService : AccessibilityService() {
             "Reject",
             "REJECT",
             "否",
-            "拒绝"
+            "拒绝",
+            "허용 안 함",
+            "거부",
+            "취소"
         )
 
         // "Always allow" checkbox text patterns
@@ -192,18 +216,25 @@ class AdbAccessibilityService : AccessibilityService() {
             "始终允许",
             "不再提示",
             "記住",
-            "记住"
+            "记住",
+            "항상 허용"
         )
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         isServiceRunning = true
+        isHandlingDialog = false
         Log.i(TAG, "AdbAccessibilityService connected")
+        // Some ROMs (e.g. Samsung) rebind accessibility services when the USB state changes,
+        // which can happen while a dialog is already on screen. No new event will arrive for it,
+        // so proactively inspect the current window after (re)connecting.
+        handler.postDelayed({ inspectAndHandleAdbDialog() }, 500L)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
         isServiceRunning = false
         Log.i(TAG, "AdbAccessibilityService destroyed")
     }
@@ -230,6 +261,8 @@ class AdbAccessibilityService : AccessibilityService() {
     private enum class DialogType { ADB, DATA_ACCESS }
 
     private fun detectDialog(node: AccessibilityNodeInfo): DialogType? {
+        val pkg = node.packageName?.toString() ?: ""
+        if (DATA_ACCESS_PACKAGES.any { pkg == it }) return DialogType.DATA_ACCESS
         val lowerText = collectLowerText(node)
         // Safety Blacklist Check: If blacklisted keywords exist, strictly abort!
         if (BLACKLIST_KEYWORDS.any { lowerText.contains(it.lowercase()) }) return null
@@ -348,6 +381,7 @@ class AdbAccessibilityService : AccessibilityService() {
                 lowerText.contains("computer") ||
                 lowerText.contains("電腦") ||
                 lowerText.contains("计算机") ||
+                lowerText.contains("컴퓨터") ||
                 lowerText.contains("授權") ||
                 lowerText.contains("授权") ||
                 lowerText.contains("指紋") ||
