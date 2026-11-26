@@ -12,7 +12,8 @@ import android.widget.Toast
 class AdbAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
-    private var lastHandledTime = 0L
+    private var lastHandledTime = 0L          // ADB 授權視窗
+    private var lastDataHandledTime = 0L      // USB 資料存取視窗 (獨立計時，避免擋到緊接著出現的 ADB 視窗)
     private var lastInspectionTime = 0L
     private var isHandlingDialog = false
     private val debounceIntervalMs = 5000L // 5 秒防重複觸發間隔
@@ -71,6 +72,49 @@ class AdbAccessibilityService : AccessibilityService() {
             "密钥指纹",
             "始终允许使用这台计算机进行调试",
             "允许调试"
+        )
+
+        // 1b. USB data-access prompts (e.g. Samsung "Allow access to phone data?")
+        //     shown when the host opens an MTP/PTP session after plugging in USB.
+        private val DATA_ACCESS_PHRASES = listOf(
+            // English
+            "allow access to phone data",
+            "allow access to tablet data",
+            "allow access to device data",
+            "allow access to data",
+            "will be able to access data on this",
+            "access data on this phone",
+            "access data on this device",
+            "access data on this tablet",
+            // Traditional Chinese
+            "允許存取手機資料",
+            "允許存取平板資料",
+            "允許存取裝置資料",
+            "允許存取資料",
+            "存取這支手機上的資料",
+            "存取此手機上的資料",
+            "存取手機上的資料",
+            "存取此裝置上的資料",
+            "存取裝置上的資料",
+            "允許存取手機數據",
+            // Simplified Chinese
+            "允许访问手机数据",
+            "允许访问平板电脑数据",
+            "允许访问设备数据",
+            "允许访问数据",
+            "访问此手机上的数据",
+            "访问手机上的数据",
+            "访问此设备上的数据",
+            "访问设备上的数据"
+        )
+
+        // Combined rule for data-access prompts: (access) AND (data) AND (usb / connected device / computer)
+        private val DATA_ACCESS_VERBS = listOf("access", "存取", "访问", "訪問")
+        private val DATA_WORDS = listOf("data", "資料", "数据", "數據")
+        private val DATA_CONTEXT_WORDS = listOf(
+            "usb", "connected device", "computer",
+            "連接的裝置", "已連接", "連線的裝置", "電腦",
+            "连接的设备", "已连接", "电脑", "计算机"
         )
 
         // 2. Keyword Group 1: Connection Medium
@@ -183,83 +227,109 @@ class AdbAccessibilityService : AccessibilityService() {
         Log.w(TAG, "AdbAccessibilityService interrupted")
     }
 
+    private enum class DialogType { ADB, DATA_ACCESS }
+
+    private fun detectDialog(node: AccessibilityNodeInfo): DialogType? {
+        val lowerText = collectLowerText(node)
+        // Safety Blacklist Check: If blacklisted keywords exist, strictly abort!
+        if (BLACKLIST_KEYWORDS.any { lowerText.contains(it.lowercase()) }) return null
+        if (isAdbText(lowerText)) return DialogType.ADB
+        if (isDataAccessText(lowerText)) return DialogType.DATA_ACCESS
+        return null
+    }
+
     private fun inspectAndHandleAdbDialog() {
         if (isHandlingDialog) return
         val rootNode = rootInActiveWindow ?: return
 
         try {
-            if (isAdbDialog(rootNode)) {
-                val now = System.currentTimeMillis()
-                if (now - lastHandledTime < debounceIntervalMs) {
-                    return
-                }
+            val type = detectDialog(rootNode) ?: return
+            val now = System.currentTimeMillis()
+            val lastTime = if (type == DialogType.ADB) lastHandledTime else lastDataHandledTime
+            if (now - lastTime < debounceIntervalMs) {
+                return
+            }
 
-                isHandlingDialog = true
+            isHandlingDialog = true
 
-                val delayMs = 2000L // 固定等待 2 秒
+            val delayMs = 2000L // 固定等待 2 秒
+            // 確保處理完畢後 5 秒內不重複觸發 (各類型獨立計時)
+            if (type == DialogType.ADB) {
+                lastHandledTime = now + delayMs + debounceIntervalMs
+            } else {
+                lastDataHandledTime = now + delayMs + debounceIntervalMs
+            }
 
-                lastHandledTime = now + delayMs + debounceIntervalMs // 確保處理完畢後 5 秒內不重複觸發
-                Log.i(TAG, "🔍 偵測到 ADB 授權視窗！等待 2 秒後點擊放行...")
+            val label = if (type == DialogType.ADB) "ADB 授權視窗" else "USB 資料存取視窗"
+            val toastRes = if (type == DialogType.ADB) R.string.toast_adb_authorized else R.string.toast_data_access_allowed
+            Log.i(TAG, "🔍 偵測到 $label！等待 2 秒後點擊放行...")
 
-                handler.postDelayed({
-                    try {
-                        val currentRoot = rootInActiveWindow ?: rootNode
-                        // 1. Check "Always allow" checkbox
+            handler.postDelayed({
+                try {
+                    val currentRoot = rootInActiveWindow ?: rootNode
+                    // 1. Check "Always allow" checkbox (ADB dialog only)
+                    if (type == DialogType.ADB) {
                         checkAlwaysAllowCheckbox(currentRoot)
+                    }
 
-                        // 2. Click "Allow" / "OK" button
-                        val clicked = clickAllowButton(currentRoot)
-                        if (clicked) {
-                            Log.i(TAG, "🚀 Successfully clicked Allow/OK, ADB authorized!")
-                            showToast(getString(R.string.toast_adb_authorized))
-                            isHandlingDialog = false
-                        } else {
-                            // Retry after 400ms if button is still loading or countdown (e.g., MIUI countdown)
-                            handler.postDelayed({
-                                try {
-                                    rootInActiveWindow?.let { newRoot ->
-                                        if (isAdbDialog(newRoot)) {
-                                            if (clickAllowButton(newRoot)) {
-                                                Log.i(TAG, "🚀 (Retry) Successfully clicked Allow/OK!")
-                                                showToast(getString(R.string.toast_adb_authorized))
-                                            }
+                    // 2. Click "Allow" / "OK" button
+                    val clicked = clickAllowButton(currentRoot)
+                    if (clicked) {
+                        Log.i(TAG, "🚀 Successfully clicked Allow/OK on $type dialog")
+                        showToast(getString(toastRes))
+                        isHandlingDialog = false
+                    } else {
+                        // Retry after 400ms if button is still loading or countdown (e.g., MIUI countdown)
+                        handler.postDelayed({
+                            try {
+                                rootInActiveWindow?.let { newRoot ->
+                                    if (detectDialog(newRoot) == type) {
+                                        if (clickAllowButton(newRoot)) {
+                                            Log.i(TAG, "🚀 (Retry) Successfully clicked Allow/OK on $type dialog")
+                                            showToast(getString(toastRes))
                                         }
                                     }
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Retry error", e)
-                                } finally {
-                                    isHandlingDialog = false
                                 }
-                            }, 400L)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Delayed execution error", e)
-                        isHandlingDialog = false
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Retry error", e)
+                            } finally {
+                                isHandlingDialog = false
+                            }
+                        }, 400L)
                     }
-                }, delayMs)
-            }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Delayed execution error", e)
+                    isHandlingDialog = false
+                }
+            }, delayMs)
         } catch (e: Exception) {
-            Log.e(TAG, "Error handling ADB dialog", e)
+            Log.e(TAG, "Error handling dialog", e)
             isHandlingDialog = false
         }
+    }
+
+    private fun collectLowerText(node: AccessibilityNodeInfo): String {
+        val allTexts = mutableListOf<String>()
+        collectAllTexts(node, allTexts)
+        return allTexts.joinToString(" ").lowercase()
+    }
+
+    /**
+     * Determine if the window text is a USB data-access (MTP/PTP) prompt,
+     * e.g. Samsung "Allow access to phone data?" / 「允許存取手機資料嗎？」
+     */
+    private fun isDataAccessText(lowerText: String): Boolean {
+        if (DATA_ACCESS_PHRASES.any { lowerText.contains(it.lowercase()) }) return true
+        return DATA_ACCESS_VERBS.any { lowerText.contains(it) } &&
+                DATA_WORDS.any { lowerText.contains(it) } &&
+                DATA_CONTEXT_WORDS.any { lowerText.contains(it) }
     }
 
     /**
      * Determine if current active window contains ADB authorization prompt
      * Strictly verifies USB / Wireless / RSA / Debugging keywords and rejects blacklisted dialogs.
      */
-    private fun isAdbDialog(node: AccessibilityNodeInfo): Boolean {
-        val allTexts = mutableListOf<String>()
-        collectAllTexts(node, allTexts)
-
-        val joinedText = allTexts.joinToString(" ")
-        val lowerText = joinedText.lowercase()
-
-        // 1. Safety Blacklist Check: If blacklisted keywords exist, strictly abort!
-        if (BLACKLIST_KEYWORDS.any { lowerText.contains(it.lowercase()) }) {
-            return false
-        }
-
+    private fun isAdbText(lowerText: String): Boolean {
         // 2. Exact phrase match (e.g. "Allow USB debugging", "允許 USB 偵錯", "RSA 金鑰指紋", etc.)
         if (EXACT_ADB_PHRASES.any { lowerText.contains(it.lowercase()) }) {
             return true

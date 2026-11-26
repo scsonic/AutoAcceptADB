@@ -66,6 +66,7 @@
     <string name="toast_open_app_details_error">Unable to open App Details settings.</string>
     <string name="toast_sim_dialog_success">🎉 Test Succeeded! Simulated ADB prompt was automatically accepted!</string>
     <string name="toast_adb_authorized">🎉 AutoAccept ADB: Debugging Authorized!</string>
+    <string name="toast_data_access_allowed">🎉 AutoAccept ADB: USB Data Access Allowed!</string>
 
     <!-- Foreground Notification -->
     <string name="notification_channel_name">AutoAccept ADB Service Channel</string>

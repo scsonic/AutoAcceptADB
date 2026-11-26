@@ -66,6 +66,7 @@
     <string name="toast_open_app_details_error">無法開啟應用程式詳細頁</string>
     <string name="toast_sim_dialog_success">🎉 測試成功！模擬 ADB 視窗已自動放行！</string>
     <string name="toast_adb_authorized">🎉 AutoAccept ADB: 已成功自動授權 ADB 偵錯！</string>
+    <string name="toast_data_access_allowed">🎉 AutoAccept ADB: 已自動同意 USB 資料存取</string>
 
     <!-- Foreground Notification -->
     <string name="notification_channel_name">AutoAccept ADB 服務通知</string>
