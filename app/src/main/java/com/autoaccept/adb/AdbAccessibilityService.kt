@@ -2,6 +2,8 @@ package com.autoaccept.adb
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
+import android.content.Intent
+import android.os.SystemClock
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -23,6 +25,9 @@ class AdbAccessibilityService : AccessibilityService() {
         private const val TAG = "AutoAcceptADB"
         var isServiceRunning = false
             private set
+
+        private const val BOOT_LAUNCH_WINDOW_MS = 3 * 60_000L
+        private var launchedThisBoot = false
 
         // 1. Explicit Full Phrases (English & Chinese)
         private val EXACT_ADB_PHRASES = listOf(
@@ -232,6 +237,25 @@ class AdbAccessibilityService : AccessibilityService() {
         // so proactively inspect the current window after (re)connecting.
         handler.postDelayed({ inspectAndHandleAdbDialog() }, 500L)
         recovery = AdbPromptRecovery(this).also { it.start() }
+        launchAppAfterBoot()
+    }
+
+    /**
+     * Bring AutoAccept ADB to the foreground once right after boot. The accessibility service is
+     * exempt from background-activity-start limits, unlike the boot receiver on Android 10+.
+     */
+    private fun launchAppAfterBoot() {
+        if (SystemClock.elapsedRealtime() > BOOT_LAUNCH_WINDOW_MS || launchedThisBoot) return
+        launchedThisBoot = true
+        try {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            )
+            Log.i(TAG, "Launched AutoAccept ADB after boot")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch app after boot", e)
+        }
     }
 
     override fun onDestroy() {
@@ -268,6 +292,12 @@ class AdbAccessibilityService : AccessibilityService() {
         val pkg = node.packageName?.toString() ?: ""
         if (DATA_ACCESS_PACKAGES.any { pkg == it }) return DialogType.DATA_ACCESS
         val lowerText = collectLowerText(node)
+        if (pkg == packageName) {
+            // Our own UI talks about "USB debugging" / "RSA key" etc. Only the in-app simulation
+            // dialog may be handled; never click anything on the main screen.
+            val simTitle = getString(R.string.test_dialog_title).lowercase()
+            return if (lowerText.contains(simTitle)) DialogType.ADB else null
+        }
         // Safety Blacklist Check: If blacklisted keywords exist, strictly abort!
         if (BLACKLIST_KEYWORDS.any { lowerText.contains(it.lowercase()) }) return null
         if (isAdbText(lowerText)) return DialogType.ADB

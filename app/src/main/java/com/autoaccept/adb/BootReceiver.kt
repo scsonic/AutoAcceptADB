@@ -22,5 +22,17 @@ class BootReceiver : BroadcastReceiver() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start KeepAliveService from boot receiver", e)
         }
+
+        if (action == Intent.ACTION_BOOT_COMPLETED || action.endsWith("QUICKBOOT_POWERON")) {
+            try {
+                context.startActivity(
+                    Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+            } catch (e: Exception) {
+                // Blocked on Android 10+ background-start limits; the accessibility service launches it instead
+                Log.w(TAG, "Could not launch MainActivity from boot receiver", e)
+            }
+        }
     }
 }

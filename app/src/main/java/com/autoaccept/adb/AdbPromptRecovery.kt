@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
@@ -20,9 +21,11 @@ import java.io.InputStreamReader
  * skips every later request ("prompt currently pending, skipping"), even after unlock or re-plug,
  * so the device stays "unauthorized" forever.
  *
- * Fix: watch logcat for those lines; when seen, dismiss a non-secure keyguard if needed, then
- * restart adbd by toggling Settings.Global.ADB_ENABLED off/on. adbd re-sends the auth request and
- * the fresh dialog is clicked by [AdbAccessibilityService].
+ * Fix: track adbd's auth state from logcat (including lines logged before this service started,
+ * e.g. during boot while the keyguard was showing). When USB is connected with the adb function
+ * enabled but the state stays "prompt pending" for a while, dismiss a non-secure keyguard if
+ * needed, then restart adbd by toggling Settings.Global.ADB_ENABLED off/on. adbd re-sends the
+ * auth request and the fresh dialog is clicked by [AdbAccessibilityService].
  *
  * Requires permissions granted once over adb (see setup_unattended.sh):
  *   pm grant com.autoaccept.adb android.permission.READ_LOGS
@@ -35,11 +38,28 @@ class AdbPromptRecovery(private val context: Context) {
         private const val MIN_INTERVAL_MS = 30_000L
         private const val UNLOCK_POLL_MS = 2_000L
 
-        private val TRIGGERS = listOf(
+        private const val CHECK_INTERVAL_MS = 10_000L
+        private const val PENDING_TIMEOUT_MS = 10_000L
+
+        // Immediate triggers: the prompt is known to be stuck
+        private val STUCK_LINES = listOf(
             "prompt currently pending, skipping",
             "isLockScreenMode"
         )
+        // A prompt was sent (normally answered by the accessibility service within seconds)
+        private val PROMPT_LINES = listOf(
+            "prompting user to authorize key",
+            "sending prompt"
+        )
+        private val AUTHORIZED_LINES = listOf("adb client authorized")
+        private val DISCONNECT_LINES = listOf("ADB disconnect", "UsbFfs: offline")
     }
+
+    enum class AuthState { UNKNOWN, PENDING, AUTHORIZED }
+
+    @Volatile var authState = AuthState.UNKNOWN
+        private set
+    @Volatile private var stateSince = System.currentTimeMillis()
 
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var running = false
@@ -63,11 +83,81 @@ class AdbPromptRecovery(private val context: Context) {
             return
         }
         running = true
-        thread = Thread({ watchLogcat() }, "adb-prompt-recovery").apply {
+        thread = Thread({
+            seedFromHistory()
+            watchLogcat()
+        }, "adb-prompt-recovery").apply {
             isDaemon = true
             start()
         }
+        handler.postDelayed(periodicCheck, CHECK_INTERVAL_MS)
         Log.i(TAG, "Recovery watcher started (writeSecureSettings=${hasWriteSecureSettings()})")
+    }
+
+    private val periodicCheck = object : Runnable {
+        override fun run() {
+            if (!running) return
+            checkNow()
+            handler.postDelayed(this, CHECK_INTERVAL_MS)
+        }
+    }
+
+    /** USB cable connected to a host with the adb function enabled (sticky USB_STATE broadcast). */
+    fun isUsbAdbConnected(): Boolean {
+        return try {
+            val i = context.registerReceiver(null, IntentFilter("android.hardware.usb.action.USB_STATE"))
+                ?: return false
+            i.getBooleanExtra("connected", false) && i.getBooleanExtra("adb", false)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** USB + adb present but authorization has been pending too long -> recover. */
+    fun checkNow() {
+        val pendingFor = System.currentTimeMillis() - stateSince
+        if (authState == AuthState.PENDING && pendingFor >= PENDING_TIMEOUT_MS && isUsbAdbConnected()) {
+            val since = if (stateSince == 0L) "since before startup" else "for ${pendingFor / 1000}s"
+            Log.i(TAG, "USB connected but ADB not authorized $since -> recovering")
+            requestRecovery()
+        }
+    }
+
+    private fun setState(state: AuthState) {
+        if (state != authState) {
+            authState = state
+            stateSince = System.currentTimeMillis()
+            Log.i(TAG, "ADB auth state -> $state")
+        }
+    }
+
+    /** Returns true if the line means the prompt is stuck (needs immediate recovery). */
+    private fun classify(line: String): Boolean {
+        when {
+            AUTHORIZED_LINES.any { line.contains(it) } -> setState(AuthState.AUTHORIZED)
+            DISCONNECT_LINES.any { line.contains(it) } -> setState(AuthState.UNKNOWN)
+            STUCK_LINES.any { line.contains(it) } -> { setState(AuthState.PENDING); return true }
+            PROMPT_LINES.any { line.contains(it) } -> setState(AuthState.PENDING)
+        }
+        return false
+    }
+
+    /** Replay adbd lines already in the log buffer (e.g. a prompt deferred during boot). */
+    private fun seedFromHistory() {
+        try {
+            val p = ProcessBuilder("logcat", "-d", "-v", "brief", "adbd:I", "AdbDebuggingManager:D", "*:S")
+                .redirectErrorStream(true).start()
+            BufferedReader(InputStreamReader(p.inputStream)).use { r ->
+                while (true) classify(r.readLine() ?: break)
+            }
+            p.waitFor()
+            // Pending since before we started: make it eligible right away
+            if (authState == AuthState.PENDING) stateSince = 0L
+            Log.i(TAG, "ADB auth state from log history: $authState")
+            handler.post { checkNow() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read log history", e)
+        }
     }
 
     fun stop() {
@@ -80,7 +170,7 @@ class AdbPromptRecovery(private val context: Context) {
     private fun watchLogcat() {
         while (running) {
             try {
-                // -T 1: only new lines from now on
+                // -T 1: start from the newest line (history was handled by seedFromHistory)
                 val p = ProcessBuilder(
                     "logcat", "-v", "brief", "-T", "1",
                     "adbd:I", "AdbDebuggingManager:D", "*:S"
@@ -89,7 +179,7 @@ class AdbPromptRecovery(private val context: Context) {
                 BufferedReader(InputStreamReader(p.inputStream)).use { reader ->
                     while (running) {
                         val line = reader.readLine() ?: break
-                        if (TRIGGERS.any { line.contains(it) }) {
+                        if (classify(line)) {
                             Log.i(TAG, "Recovery trigger: $line")
                             handler.post { requestRecovery() }
                         }
